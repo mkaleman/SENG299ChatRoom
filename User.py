@@ -1,13 +1,16 @@
 class User(object):
     """docstring for User."""
 
-    alias = ""
 
-    def __init__(self, arg):
+    def __init__(self, alias):
         super(User, self).__init__()
-        self.arg = arg
+        self.alias = alias
 
     def set_alias(self, new_alias):
+        self.alias = new_alias
+
+    def get_alias(self):
+        return self.alias
 
     def invite(self, alias, chatroom_name):
 
@@ -20,5 +23,3 @@ class User(object):
     def convert_alias_To_User(self, alias):
 
     def convert_name_to_chatroom(self, chatroom_name):
-
-    

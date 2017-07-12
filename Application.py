@@ -1,12 +1,14 @@
+from Chatroom import Chatroom
+from Message import Message
+from User import User
+
 class Application(object):
     """docstring for Application."""
 
-    users = []
-    chatrooms = []
-
-    def __init__(self, arg):
+    def __init__(self):
         super(Application, self).__init__()
-        self.arg = arg;
+        self.users = []
+        self.chatrooms = []
 
     def connect_client_to_server(self):
 
@@ -16,8 +18,10 @@ class Application(object):
 
     def create_chatroom(self, chatroom_name):
 
-    def delete_chatroom(seldf, chatroom_name):
+    def delete_chatroom(self, chatroom_name):
 
     def display_chatrooms(self):
+        for i in self.chatrooms:
+            print i
 
     def convert_name_to_Chatroom(self, chatroom_name):
