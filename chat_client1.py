@@ -10,7 +10,7 @@ def send():
 def receive():
 	while True:
 		data = client_sock.recv(1024)
-		print "\n" + str(data)
+		sys.stdout.write("\n" + str(data) + "\nMe: ")
 		sys.stdout.flush()
 
 client_sock = socket.socket()
