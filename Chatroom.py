@@ -32,32 +32,25 @@ class Chatroom(object):
         if user in self.active_members:
             self.active_members.remove(user)
 
-    # def block_user(self, alias):
-    #     user = convert_alias_to_User(alias)
-    #     if user in self.members:
-    #         self.blocked_users.append(user)
-    #         self.members.remove(user)
-    #         print alias + " successfully blocked from chatroom " + self.room_name
-    #     else:
-    #         print "ERROR: Can't block " + alias + " as they are not currently a room member."
-    #
-    # def unblock_user(self, alias):
-    #     user = convert_alias_to_User(alias)
-    #     if user in self.blocked_users:
-    #         self.blocked_users.remove(user)
-    #         print alias + " successfully unblocked from chatroom " + self.room_name
-    #     else:
-    #         print "ERROR: Can't unblock " + alias + " as they are not currently blocked."
-    #
-    # def display_users(self, alias):
-    #     for i in self.members:
-    #         print i.get_alias()
-    #
-    # def display_messages(self):
-    #     for i in self.messages:
-    #         print i
-    #
-    # def convert_alias_to_User(self, alias):
-    #
-    # def __str__(self):
-    #     return str(self.room_name)
+    def get_members(self):
+        return self.members
+
+    def get_blocked_users(self):
+        return self.blocked_users
+
+    def block_user(self, user):
+        if user in self.members:
+            self.blocked_users.append(user)
+            self.members.remove(user)
+            self.active_members.remove(user)
+            user.set_active_room(None)
+            return True
+        else:
+            return False
+
+    def unblock_user(self, user):
+        if user in self.blocked_users:
+            self.blocked_users.remove(user)
+            return True
+        else:
+            return False

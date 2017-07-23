@@ -1,3 +1,5 @@
+from Chatroom import Chatroom
+
 class User(object):
     """docstring for User."""
 
@@ -6,6 +8,9 @@ class User(object):
         self.alias = alias
         self.socket = socket
         self.room_owner = False
+        self.active_room = None
+        self.response = None
+        self.broadcast = True
 
     def set_alias(self, new_alias):
         self.alias = new_alias
@@ -22,14 +27,26 @@ class User(object):
     def get_room_ownership(self):
         return self.room_owner
 
-    # def invite(self, alias, chatroom_name):
-    #
-    # def join(self, chatroom_name):
-    #
-    # def sendMessage(self, message_content, chatroom_name):
-    #
-    # def exit(self, chatroom_name):
-    #
-    # def convert_alias_To_User(self, alias):
-    #
-    # def convert_name_to_chatroom(self, chatroom_name):
+    def set_active_room(self, room):
+        self.active_room = room
+
+    def get_active_room(self):
+        return self.active_room
+
+    def set_response(self, message):
+        self.response = message
+
+    def get_response(self):
+        return self.response
+
+    def set_broadcasting(self, boolean):
+        self.broadcast = boolean
+
+    def broadcasting(self):
+        return self.broadcast
+
+    # def request_to_join(self, user, room):
+    #     self.socket.send("User %s has requested to join chatroom %s. Allow them to join? [Y,n]" % (user.get_alias(), room.get_room_name()))
+    #     response = self.socket.recv(1024)
+    #     if response == "y" or response == "Y":
+    #         room.add_member(user)

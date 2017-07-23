@@ -1,6 +1,8 @@
 import socket
 from threading import Thread
 import sys
+from User import User
+from Chatroom import Chatroom
 
 class Client(object):
     """docstring for Client."""
@@ -16,17 +18,26 @@ class Client(object):
         print 'Connected to Server...'
         self.uname = raw_input('Enter your name: ')
         self.client_sock.send(self.uname)
-        sys.stdout.write("Please join one of the available rooms: \n")
         Thread(target=self.send).start()
         Thread(target=self.receive).start()
 
     def send(self):
         while True:
-            msg = raw_input('Me: ')
-            self.client_sock.send(msg)
+            try:
+                msg = raw_input(">>")
+                self.client_sock.send(msg)
+            except Exception as e:
+                print(e.message)
+                # self.client_sock.close()
+                # return False
 
     def receive(self):
         while True:
-            data = self.client_sock.recv(1024)
-            sys.stdout.write("\n" + str(data) + "\nMe:")
-            sys.stdout.flush()
+            try:
+                data = self.client_sock.recv(1024)
+                sys.stdout.write("\n" + str(data) + "\n>>")
+                sys.stdout.flush()
+            except Exception as e:
+                print(e.message)
+                # self.client_sock.close()
+                # return False
