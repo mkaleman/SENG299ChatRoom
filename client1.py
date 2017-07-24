@@ -10,7 +10,7 @@ class Client(object):
     def __init__(self):
         super(Client, self).__init__()
         self.client_sock = socket.socket()
-        self.HOST = '192.168.0.7'
+        self.HOST = 'localhost'
         self.PORT = 8000
         self.client_sock.connect((self.HOST, self.PORT))
 
