@@ -230,6 +230,21 @@ class Server(object):
             user.get_socket().send("Can't invite %s: Invalid room name" % alias_to_invite)
 
 
+    def delete(self, user, room_name):
+        room = self.get_room_by_room_name(room_name)
+        if room:
+            if room.get_owner() == user:
+                self.broadcast(user, "The chat room %s has been deleted" % room_name, room, False)
+                for i in room.get_active_members():
+                    i.set_active_room(None)
+                self.ROOM_LIST.remove(room)
+                user.get_socket().send("Successfully deleted room %s" % room_name)
+            else:
+                user.get_socket().send("Can't delete room %s: You must be the owner of the room to delete it" % room_name)
+        else:
+            user.get_socket().send("Can't delete room %s: Invalid room name" % room_name)
+
+
 
     def handle_command(self, text, user):
         if text[0] == "/create":
@@ -250,6 +265,8 @@ class Server(object):
             self.unblock(user, text[1])
         elif text[0] == "/invite":
             self.invite(user, text[1], text[2])
+        elif text[0] == "/delete":
+            self.delete(user, text[1])
         else:
             user.get_socket().send("Invalid Command")
             self.help(user)
