@@ -128,13 +128,15 @@ class Server(object):
         text = "CMDirect\n\nCommands and Their Functions: \n"
         text += "/help:\t\t\t Display this message again. \n"
         text += "/create [room name]:\t Create a new chat room of the specified name. \n"
+        text += "/delete [room name]:\t Delete the chat room.\n\t\t\t You must be the creator of the chatroom. \n"
         text += "/join [room name]:\t Join  the chat room. \n"
+        text += "/invite [alias] [room]:\t Add alias to the chat room. \n"
         text += "/exit:\t\t\t Exit the current chat room or application. \n"
         text += "/set_alias [new_alias]:\t Change your alias. \n"
         text += "/display_users:\t\t Displays all active users of a room \n"
         text += "/display_rooms:\t\t Displays all active chat rooms \n"
         text += "/block [user]:\t\t Removes user from current chat room.\n\t\t\t You must be the creator of the chat room.\n"
-        text += "/unblock [user]:\t Unblocks the user from the current chat room\n\t\t\t You must be the creator of the chat room\n\n"
+        text += "/unblock [user]:\t Unblocks the user from the current chat room.\n\t\t\t You must be the creator of the chat room. \n\n"
         user.get_socket().send(text)
 
 
