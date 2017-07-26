@@ -2,6 +2,7 @@ import socket
 from threading import Thread
 from User import User
 from Chatroom import Chatroom
+from datetime import datetime
 
 class Server(object):
     """docstring for Server."""
@@ -121,6 +122,7 @@ class Server(object):
             user.get_socket().send("Are you sure you want to quit CMDirect? [Y/n]")
             response = user.get_socket().recv(1024)
             if response == "Y" or response == "y":
+                user.get_socket().shutdown(1)
                 user.get_socket().close()
                 return False
 
@@ -293,13 +295,14 @@ class Server(object):
                     user.set_response(data)
             except Exception as x:
                 print(x.message)
+                user.get_socket().shutdown(1);
                 user.get_socket().close()
                 return False
 
 
     def broadcast(self, user, msg, room, boolean):
         if boolean:
-            message = user.get_alias() + ": " + msg
+            message = "[" + datetime.now().strftime("%m-%d %H:%M") + "] " + user.get_alias() + ": " + msg
             room.add_message(message)
         else:
             message = msg

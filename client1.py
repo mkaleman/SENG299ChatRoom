@@ -28,8 +28,9 @@ class Client(object):
                 self.client_sock.send(msg)
             except Exception as e:
                 print(e.message)
-                # self.client_sock.close()
-                # return False
+                self.client_sock.shutdown(1)
+                self.client_sock.close()
+                return False
 
     def receive(self):
         while True:
@@ -39,5 +40,6 @@ class Client(object):
                 sys.stdout.flush()
             except Exception as e:
                 print(e.message)
-                # self.client_sock.close()
-                # return False
+                seld.client_sock.shutdown(1)
+                self.client_sock.close()
+                return False
