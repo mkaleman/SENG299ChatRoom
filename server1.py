@@ -104,6 +104,7 @@ class Server(object):
                 room.add_active_member(user)
                 user.set_active_room(room)
                 user.get_socket().send("Entering Room %s..." % rname)
+                user.get_socket().send(room.get_messages())
                 self.broadcast(user, "%s has joined the room." % user.get_alias(), room, False)
         else:
             user.get_socket().send("Can't enter room: Invalid room name.")
@@ -292,13 +293,14 @@ class Server(object):
                     user.set_response(data)
             except Exception as x:
                 print(x.message)
-                #user.get_socket().close()
+                user.get_socket().close()
                 return False
 
 
     def broadcast(self, user, msg, room, boolean):
         if boolean:
             message = user.get_alias() + ": " + msg
+            room.add_message(message)
         else:
             message = msg
         for i in room.get_active_members():

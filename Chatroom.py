@@ -54,3 +54,14 @@ class Chatroom(object):
             return True
         else:
             return False
+
+    def get_messages(self):
+        text = ""
+        for i in self.messages:
+            text += i + "\n"
+        return text
+
+    def add_message(self, msg):
+        self.messages.append(msg)
+        if len(self.messages) > 100:
+            self.messages.pop()
