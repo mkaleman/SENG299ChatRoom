@@ -225,7 +225,7 @@ class Server(object):
             if user_to_invite not in room.get_blocked_users():
                 if user_to_invite not in room.get_members():
                     room.add_member(user_to_invite)
-                    user.get_socket().send("Successfully added %s to %s" % (room.get_room_name(), alias_to_invite))
+                    user.get_socket().send("Successfully added %s to %s" % (alias_to_invite, room.get_room_name()))
                     user_to_invite.get_socket().send("You have been added to the chat room %s by user %s" % (room.get_room_name(), user.get_alias()))
                 else:
                     user.get_socket().send("Can't invite %s: They are already a member of the chat room %s" % (alias_to_invite, room.get_room_name()))
@@ -283,14 +283,22 @@ class Server(object):
                 data = user.get_socket().recv(1024)
                 if data and user.broadcasting():
                     text = data
-                    text = text.split()
-                    if text[0][0] == '/':
-                        self.handle_command(text, user)
+                    if text.isspace():
+                        user.get_socket().send("Your message cannot contain just white space.")
                     else:
-                        if user.get_active_room():
-                            self.broadcast(user, data, user.get_active_room(), True)
+                        text = text.split()
+                        if text[0][0] == '/':
+                            self.handle_command(text, user)
                         else:
-                            user.get_socket().send("You must enter a chat room to send a message.")
+                            if user.get_active_room():
+                                if len(data) == 0:
+                                    user.get_socket().send("Your message must be greater than 0 characters.")
+                                elif len(data) > 1000:
+                                    user.get_socket().send("You cannot send a message that exceeds 1000 characters.")
+                                else:
+                                    self.broadcast(user, data, user.get_active_room(), True)
+                            else:
+                                user.get_socket().send("You must enter a chat room to send a message.")
                 elif data and not user.broadcasting():
                     user.set_response(data)
             except Exception as x:
