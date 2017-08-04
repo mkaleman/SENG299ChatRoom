@@ -17,7 +17,9 @@ class Chatroom(object):
         return self.members[0]
 
     def change_owner(self):
-        del self.members[0]
+        self.members.remove(self.get_owner())
+        if len(self.members) != 0:
+            self.members[0].set_room_ownership(True)
 
     def add_member(self, user):
         self.members.append(user)
@@ -65,3 +67,26 @@ class Chatroom(object):
         self.messages.append(msg)
         if len(self.messages) > 100:
             self.messages.pop()
+
+    def remove_user(self, user):
+        owner_change = False
+        if self.get_owner() == user:
+            self.change_owner()
+            owner_change = True
+        if user in self.active_members:
+            self.active_members.remove(user)
+            for usr in self.active_members:
+                usr.get_socket().send(user.get_alias() + " has left the application.")
+        if user in self.members:
+            self.members.remove(user)
+        if user in self.blocked_users:
+            self.blocked_users.remove(user)
+        if len(self.members) == 0:
+            return ""
+        if owner_change:
+            if len(self.members) == 0:
+                return ""
+            else:
+                return self.members[0]
+        else:
+            return False
