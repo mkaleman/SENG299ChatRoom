@@ -1,8 +1,12 @@
 import socket
 from threading import Thread
+
+import select
+
 from User import User
 from Chatroom import Chatroom
 from datetime import datetime
+
 
 class Server(object):
     """docstring for Server."""
@@ -16,13 +20,11 @@ class Server(object):
         self.PORT = 8000
         self.server_sock.bind((self.HOST, self.PORT))
 
-
     def run(self):
         print 'Starting Chat Server...'
         self.server_sock.listen(5)
         print 'Server Listening...'
         Thread(target=self.accept_client).start()
-
 
     def get_rooms(self):
         if self.ROOM_LIST:
@@ -34,13 +36,26 @@ class Server(object):
         else:
             return "No rooms have been created yet"
 
-
     def valid_username(self, uname):
         if not [x for x in self.USER_LIST if x.get_alias() == uname]:
             return True
         else:
             return False
 
+    def remove_socket(self, user):
+        new_owner = ""
+        users_room = user.get_active_room()
+        if users_room:
+            new_owner = users_room.remove_user(user)
+            if new_owner == "":
+                self.ROOM_LIST.remove(users_room)
+            elif not new_owner:
+                pass
+            else:
+                new_owner.get_socket().send("You are now the owner of "+users_room.get_room_name()+".")
+        if user in self.USER_LIST:
+            self.USER_LIST.remove(user)
+        print "%s has disconnected." % user.get_alias()
 
     def accept_client(self):
         while True:
@@ -55,7 +70,16 @@ class Server(object):
             self.help(new_user)
             new_user.get_socket().send(self.get_rooms())
             Thread(target=self.broadcast_usr, args=[new_user]).start()
+            Thread(target=self.detect_socket_disconnect, args=[new_user]).start()
 
+    def detect_socket_disconnect(self, user):
+        while True:
+            try:
+                select.select([user.get_socket(), ], [user.get_socket(), ], [])
+            except Exception:
+                user.get_socket().close()
+                self.remove_socket(user)
+                break
 
     def create_room(self, rname, user):
         if len(self.ROOM_LIST) <= 20:
@@ -75,7 +99,6 @@ class Server(object):
         else:
             user.get_socket().send("Can't create room: the maximum number of rooms has already been created.")
 
-
     def join_room(self, rname, user):
         a = [x for x in self.ROOM_LIST if x.get_room_name() == rname]
         if a:
@@ -86,7 +109,8 @@ class Server(object):
                 user.get_socket().send("Request to join room %s sent to room owner" % rname)
                 owner = room.get_owner()
                 owner.set_broadcasting(False)
-                owner.get_socket().send("User %s has requested to join chatroom %s. Allow them to join? [Y,n]" % (user.get_alias(), rname))
+                owner.get_socket().send(
+                    "User %s has requested to join chatroom %s. Allow them to join? [Y,n]" % (user.get_alias(), rname))
                 while not owner.broadcasting():
                     if owner.get_response():
                         if owner.get_response().lower() == "y" or owner.get_response().lower() == "n":
@@ -95,8 +119,8 @@ class Server(object):
                             owner.get_socket().send("Please enter 'Y' or 'n'")
                             owner.set_response(None)
                 if owner.get_response().lower() == "y":
-                   owner.get_socket().send("Successfully added %s to chat room" % user.get_alias())
-                   room.add_member(user)
+                    owner.get_socket().send("Successfully added %s to chat room" % user.get_alias())
+                    room.add_member(user)
                 if owner.get_response().lower() == "n":
                     owner.get_socket().send("Denied access to %s." % user.get_alias())
                     user.get_socket().send("Join request declined.")
@@ -109,7 +133,6 @@ class Server(object):
                 self.broadcast(user, "%s has joined the room." % user.get_alias(), room, False)
         else:
             user.get_socket().send("Can't enter room: Invalid room name.")
-
 
     def exit(self, user):
         if user.get_active_room():
@@ -126,7 +149,6 @@ class Server(object):
                 user.get_socket().close()
                 return False
 
-
     def help(self, user):
         text = "CMDirect\n\nCommands and Their Functions: \n"
         text += "/help:\t\t\t Display this message again. \n"
@@ -142,7 +164,6 @@ class Server(object):
         text += "/unblock [user]:\t Unblocks the user from the current chat room.\n\t\t\t You must be the creator of the chat room. \n\n"
         user.get_socket().send(text)
 
-
     def display_users(self, user):
         msg = "Current Users of "
         if user.get_active_room():
@@ -155,10 +176,8 @@ class Server(object):
                 msg += i.get_alias() + "\n"
         user.get_socket().send(msg)
 
-
     def display_rooms(self, user):
         user.get_socket().send(self.get_rooms())
-
 
     def set_alias(self, user, new_alias):
         if self.valid_username(new_alias):
@@ -167,13 +186,11 @@ class Server(object):
         else:
             user.get_socket().send("Can't change alias: The alias you entered is already in use")
 
-
     def get_user_by_alias(self, alias):
         for i in self.USER_LIST:
             if i.get_alias() == alias:
                 return i
         return None
-
 
     def get_room_by_room_name(self, room_name):
         for i in self.ROOM_LIST:
@@ -181,24 +198,25 @@ class Server(object):
                 return i
         return None
 
-
     def block(self, user, alias_to_block):
         user_to_block = self.get_user_by_alias(alias_to_block)
         room = user.get_active_room()
         if room:
             if room.get_owner() == user:
                 if room.block_user(user_to_block):
-                    user.get_socket().send("Successfully blocked %s from chat room %s" % (user_to_block.get_alias(), room.get_room_name()))
+                    user.get_socket().send(
+                        "Successfully blocked %s from chat room %s" % (user_to_block.get_alias(), room.get_room_name()))
                     msg = "User %s has been blocked from the chat room" % user_to_block.get_alias()
                     self.broadcast(user, msg, room, False)
-                    user_to_block.get_socket().send("You have been blocked from the chat room %s" % room.get_room_name())
+                    user_to_block.get_socket().send(
+                        "You have been blocked from the chat room %s" % room.get_room_name())
                 else:
-                    user.get_socket().send("Can't block %s: They are not a member of %s" % (user_to_block.get_alias(), room.get_room_name()))
+                    user.get_socket().send("Can't block %s: They are not a member of %s" % (
+                        user_to_block.get_alias(), room.get_room_name()))
             else:
                 user.get_socket().send("You must be the owner of a chat room to block a user")
         else:
             user.get_socket().send("You must be in a chat room to block a user")
-
 
     def unblock(self, user, alias_to_unblock):
         user_to_unblock = self.get_user_by_alias(alias_to_unblock)
@@ -206,17 +224,20 @@ class Server(object):
         if room:
             if room.get_owner() == user:
                 if room.unblock_user(user_to_unblock):
-                    user.get_socket().send("Successfully unblocked %s from chat room %s" % (user_to_unblock.get_alias(), room.get_room_name()))
-                    msg = "User %s has been unblocked from the chat room %s", (user_to_unblock.get_alias(), room.get_room_name())
+                    user.get_socket().send("Successfully unblocked %s from chat room %s" % (
+                        user_to_unblock.get_alias(), room.get_room_name()))
+                    msg = "User %s has been unblocked from the chat room %s", (
+                        user_to_unblock.get_alias(), room.get_room_name())
                     self.broadcast(user, msg, room, False)
-                    user_to_unblock.get_socket().send("You have been unblocked from the chat room %s" % room.get_room_name())
+                    user_to_unblock.get_socket().send(
+                        "You have been unblocked from the chat room %s" % room.get_room_name())
                 else:
-                    user.get_socket().send("Cant unblock %s: They are not currently blocked from chat room %s" % (user_to_unblock.get_alias(), room.get_room_name()))
+                    user.get_socket().send("Cant unblock %s: They are not currently blocked from chat room %s" % (
+                        user_to_unblock.get_alias(), room.get_room_name()))
             else:
                 user.get_socket().send("You must be the owner of a chat room to unblock a user")
         else:
             user.get_socket().send("You must be in a chat room to unblock a user")
-
 
     def invite(self, user, alias_to_invite, room_name):
         user_to_invite = self.get_user_by_alias(alias_to_invite)
@@ -226,14 +247,16 @@ class Server(object):
                 if user_to_invite not in room.get_members():
                     room.add_member(user_to_invite)
                     user.get_socket().send("Successfully added %s to %s" % (alias_to_invite, room.get_room_name()))
-                    user_to_invite.get_socket().send("You have been added to the chat room %s by user %s" % (room.get_room_name(), user.get_alias()))
+                    user_to_invite.get_socket().send(
+                        "You have been added to the chat room %s by user %s" % (room.get_room_name(), user.get_alias()))
                 else:
-                    user.get_socket().send("Can't invite %s: They are already a member of the chat room %s" % (alias_to_invite, room.get_room_name()))
+                    user.get_socket().send("Can't invite %s: They are already a member of the chat room %s" % (
+                        alias_to_invite, room.get_room_name()))
             else:
-                user.get_socket().send("Can't invite %s: They are blocked from the chat room %s" % (alias_to_invite, room.get_room_name()))
+                user.get_socket().send(
+                    "Can't invite %s: They are blocked from the chat room %s" % (alias_to_invite, room.get_room_name()))
         else:
             user.get_socket().send("Can't invite %s: Invalid room name" % alias_to_invite)
-
 
     def delete(self, user, room_name):
         room = self.get_room_by_room_name(room_name)
@@ -245,11 +268,10 @@ class Server(object):
                 self.ROOM_LIST.remove(room)
                 user.get_socket().send("Successfully deleted room %s" % room_name)
             else:
-                user.get_socket().send("Can't delete room %s: You must be the owner of the room to delete it" % room_name)
+                user.get_socket().send(
+                    "Can't delete room %s: You must be the owner of the room to delete it" % room_name)
         else:
             user.get_socket().send("Can't delete room %s: Invalid room name" % room_name)
-
-
 
     def handle_command(self, text, user):
         if text[0] == "/create":
@@ -276,9 +298,22 @@ class Server(object):
             user.get_socket().send("Invalid Command")
             self.help(user)
 
-
     def broadcast_usr(self, user):
         while True:
+            try:
+                select.select([user.get_socket(), ], [user.get_socket(), ], [])
+            except select.error:
+                self.sys.System.out("got here.")
+                user.get_socket().shutdown(2)  # 0 = done receiving, 1 = done sending, 2 = both
+                user.get_socket().close()
+                users_room = user.get_active_room()
+                if users_room:
+                    users_room.remove_user(user)
+                if user in self.USER_LIST:
+                    self.USER_LIST.remove(self)
+                self.sys.System.out(user," has disconnected.")
+                break
+
             try:
                 data = user.get_socket().recv(1024)
                 if data and user.broadcasting():
@@ -306,7 +341,6 @@ class Server(object):
                 user.get_socket().shutdown(1);
                 user.get_socket().close()
                 return False
-
 
     def broadcast(self, user, msg, room, boolean):
         if boolean:
